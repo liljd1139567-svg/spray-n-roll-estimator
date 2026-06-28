@@ -909,26 +909,45 @@ window.generatePDF = async function() {
         container.innerHTML        = bodyHTML;
         document.body.appendChild(container);
 
+        // Wait for browser to fully render the container before capturing
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        showStatus('Rendering PDF (this takes ~10 seconds)…', 'loading');
+
         // Generate PDF blob
-        const pdfBlob = await html2pdf()
-            .set({
-                margin:      [8, 8, 8, 8],
-                filename:    `estimate-${lastCalc.clientName.replace(/\s+/g,'-').toLowerCase()}.pdf`,
-                image:       { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
-                jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            })
-            .from(container)
-            .outputPdf('blob');
+        let pdfBlob;
+        try {
+            pdfBlob = await html2pdf()
+                .set({
+                    margin:      [8, 8, 8, 8],
+                    filename:    `estimate-${lastCalc.clientName.replace(/\s+/g,'-').toLowerCase()}.pdf`,
+                    image:       { type: 'jpeg', quality: 0.92 },
+                    html2canvas: { 
+                        scale: 1.5, 
+                        useCORS: true, 
+                        allowTaint: true,
+                        logging: true,
+                        backgroundColor: '#ffffff',
+                        imageTimeout: 15000,
+                    },
+                    jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                })
+                .from(container)
+                .outputPdf('blob');
+            console.log('PDF blob generated, size:', pdfBlob.size);
+        } catch(pdfErr) {
+            throw new Error('PDF render failed: ' + pdfErr.message);
+        }
 
         // Clean up temp elements
         document.body.removeChild(container);
         document.head.removeChild(styleTag);
 
         // Upload PDF to Supabase storage
-        showStatus('Uploading PDF…', 'loading');
+        showStatus('Uploading PDF to cloud…', 'loading');
         const safeName  = lastCalc.clientName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
         const fileName  = `estimates/${safeName}-${Date.now()}.pdf`;
+        console.log('Uploading to:', `${SUPABASE_URL}/storage/v1/object/site-photos/${fileName}`);
         const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/site-photos/${fileName}`, {
             method:  'POST',
             headers: {

@@ -735,16 +735,28 @@ window.generatePDF = async function() {
         container.innerHTML        = bodyHTML;
         document.body.appendChild(container);
 
+        // Wait for browser to fully render before capturing
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         const pdfBlob = await html2pdf()
             .set({
                 margin:      [8, 8, 8, 8],
                 filename:    `estimate-${lastCalc.clientName.replace(/\s+/g,'-').toLowerCase()}.pdf`,
-                image:       { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+                image:       { type: 'jpeg', quality: 0.92 },
+                html2canvas: { 
+                    scale: 1.5, 
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: true,
+                    backgroundColor: '#ffffff',
+                    imageTimeout: 15000,
+                },
                 jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
             })
             .from(container)
             .outputPdf('blob');
+
+        console.log('Exterior PDF blob size:', pdfBlob.size);
 
         document.body.removeChild(container);
         document.head.removeChild(styleTag);
