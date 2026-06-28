@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spray N Roll - Exterior Estimator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen pb-16">
+
+<header class="bg-indigo-600 text-white p-4 shadow-md sticky top-0 z-50 flex justify-between items-center">
+    <h1 class="text-xl font-bold tracking-wide">Spray N Roll — Exterior</h1>
+    <span class="text-xs bg-indigo-500 px-2 py-1 rounded">v2.0</span>
+</header>
+
+<main class="max-w-lg mx-auto p-4 space-y-5">
+
+    <!-- CLIENT -->
+    <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Client Details</h2>
+        <input type="text" id="clientName" placeholder="Client Name"
+               class="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-400">
+        <input type="text" id="clientAddress" placeholder="Property Address"
+               class="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-400">
+    </section>
+
+    <!-- BUSINESS RATES — identical panel to interior app -->
+    <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Business Rates</h2>
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Wage Rate ($/hr)</label>
+                <input type="number" id="wageRate" value="21"
+                       class="w-full p-2 border border-gray-200 rounded-lg text-sm text-center">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Mark Up %</label>
+                <input type="number" id="markUp" value="50"
+                       class="w-full p-2 border border-gray-200 rounded-lg text-sm text-center">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Overhead %</label>
+                <input type="number" id="overhead" value="10"
+                       class="w-full p-2 border border-gray-200 rounded-lg text-sm text-center">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Net Profit %</label>
+                <input type="number" id="netProfit" value="30"
+                       class="w-full p-2 border border-gray-200 rounded-lg text-sm text-center">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Paint Cost ($/gal)</label>
+                <input type="number" id="paintCostPerGal" value="55" step="0.01"
+                       class="w-full p-2 border border-gray-200 rounded-lg text-sm text-center">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Sundries ($/hr)</label>
+                <input type="number" id="sundriesRate" value="5.00" step="0.01"
+                       class="w-full p-2 border border-gray-200 rounded-lg text-sm text-center">
+            </div>
+        </div>
+    </section>
+
+    <!-- PROJECT TYPE -->
+    <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Siding Material</h2>
+        <select id="sidingType" class="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-400">
+            <option value="400">Vinyl / Aluminum — 400 sqft/gal</option>
+            <option value="350">Hardie / Smooth Wood — 350 sqft/gal</option>
+            <option value="250">Rough Wood / Cedar — 250 sqft/gal</option>
+            <option value="200">Stucco / Brick — 200 sqft/gal</option>
+        </select>
+    </section>
+
+    <!-- ELEVATIONS -->
+    <section id="elevationsContainer" class="space-y-4"></section>
+
+    <!-- ACTIONS -->
+    <div class="space-y-3">
+        <button onclick="addElevation()"
+                class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold p-4 rounded-xl shadow-sm transition">
+            + Add Elevation / Side
+        </button>
+        <button onclick="calculateEstimate()"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-xl shadow-md transition">
+            Calculate Estimate
+        </button>
+        <button id="saveBtn" onclick="saveEstimate()"
+                class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold p-4 rounded-xl shadow-md transition hidden">
+            ☁ Save & Log to Google Sheets
+        </button>
+    </div>
+
+    <!-- STATUS -->
+    <div id="statusBanner" class="hidden rounded-xl p-4 text-sm font-medium text-center"></div>
+
+    <!-- SUMMARY -->
+    <section id="summarySection" class="hidden bg-white rounded-xl shadow-md border border-indigo-100 overflow-hidden">
+        <div class="bg-indigo-600 text-white px-5 py-3">
+            <h2 class="text-base font-bold">Estimate Summary</h2>
+            <p id="summaryClient" class="text-indigo-200 text-xs mt-0.5"></p>
+        </div>
+        <div class="p-5 space-y-2 text-sm text-gray-600">
+            <div class="flex justify-between"><span>Total Labor Hours:</span><span id="outHours" class="font-semibold text-gray-800"></span></div>
+            <div class="flex justify-between"><span>Paint Required:</span><span id="outGallons" class="font-semibold text-gray-800"></span></div>
+            <div class="flex justify-between"><span>Labor Cost:</span><span id="outLabor" class="font-semibold text-gray-800"></span></div>
+            <div class="flex justify-between"><span>Material Cost:</span><span id="outMaterial" class="font-semibold text-gray-800"></span></div>
+            <div class="flex justify-between"><span>Sundries & Fees:</span><span id="outSundries" class="font-semibold text-gray-800"></span></div>
+            <hr class="my-1">
+            <div class="flex justify-between text-base font-bold text-gray-900">
+                <span>Grand Total Bid:</span>
+                <span id="outTotal" class="text-indigo-600 text-lg"></span>
+            </div>
+        </div>
+
+        <!-- Elevation breakdown -->
+        <div class="border-t px-5 pb-5">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-4 mb-2">Elevation Breakdown</p>
+            <div id="elevBreakdownList" class="space-y-2 text-xs text-gray-500"></div>
+        </div>
+
+
+    </section>
+
+</main>
+
+<script type="module">
+
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const SUPABASE_URL   = 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_ANON  = 'YOUR_ANON_PUBLIC_KEY';
+const SHEETS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzGmbzC5OyJ4Y_Tm_oDlSWuaaUGZYpGtW1J5UBAg-qfrrX2wkT_VfLAcW9UQsNHmONL5A/exec';
+
+// ── EXTERIOR PRODUCTION RATES ─────────────────────────────────────────────────
+// All sourced from original exterior estimator logic
+const EXT = {
+    sidingHrsPerSqFt:   1 / 200,   // hrs per sqft of siding
+    trimHrsPerLnFt:     1 / 40,    // hrs per linear ft of fascia/soffit
+    windowHrsEach:      1.0,
+    doorHrsEach:        1.0,
+    shutterInPlace:     0.25,      // hrs each
+    shutterRemove:      0.50,      // hrs each (remove, paint, reinstall)
+    wasteFactor:        1.20,      // 20% overage for spray exterior
+    setupCleanupRatio:  16,        // same as interior: 1 cleanup hr per 16 production hrs
+};
+
+// ── ELEVATION CARD ────────────────────────────────────────────────────────────
+let elevCount = 0;
+
+window.addElevation = function() {
+    elevCount++;
+    const id = elevCount;
+    const container = document.getElementById('elevationsContainer');
+
+    const html = `
+    <div id="elev_${id}" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+
+        <div class="flex justify-between items-center bg-gray-50 px-4 py-3 border-b">
+            <input type="text" class="elev-name font-bold text-gray-700 bg-transparent text-sm w-full focus:outline-none"
+                   placeholder="Side Name (e.g. Front, Left, Rear)" value="${['Front','Left','Rear','Right'][id-1] || 'Side ' + id}">
+            <button onclick="document.getElementById('elev_${id}').remove()"
+                    class="ml-3 text-red-400 hover:text-red-600 text-xs font-semibold shrink-0">Remove</button>
+        </div>
+
+        <div class="p-4 space-y-4">
+
+            <!-- SIDING -->
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Siding Area (sq ft)</label>
+                <input type="number" class="elev-sqft w-full p-2 border border-gray-200 rounded-lg text-sm" value="0">
+            </div>
+
+            <!-- TRIM + FASCIA -->
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Fascia / Soffit Trim (lin ft)</label>
+                <input type="number" class="elev-trim w-full p-2 border border-gray-200 rounded-lg text-sm" value="0">
+            </div>
+
+            <!-- WINDOWS + DOORS + SHUTTERS -->
+            <div class="grid grid-cols-3 gap-2">
+                <div>
+                    <label class="text-[10px] text-gray-400 uppercase block mb-1">Windows</label>
+                    <input type="number" class="elev-windows w-full p-2 border border-gray-200 rounded-lg text-sm" value="0">
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-400 uppercase block mb-1">Doors</label>
+                    <input type="number" class="elev-doors w-full p-2 border border-gray-200 rounded-lg text-sm" value="0">
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-400 uppercase block mb-1">Shutters</label>
+                    <input type="number" class="elev-shutters w-full p-2 border border-gray-200 rounded-lg text-sm" value="0">
+                </div>
+            </div>
+
+            <!-- SHUTTER METHOD -->
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Shutter Method</label>
+                <select class="elev-shutter-method w-full p-2 border border-gray-200 rounded-lg text-sm">
+                    <option value="inplace">Paint In Place</option>
+                    <option value="remove">Remove, Paint & Reinstall</option>
+                </select>
+            </div>
+
+            <!-- HEIGHT + TERRAIN DIFFICULTY -->
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-[10px] text-gray-400 uppercase block mb-1">Height</label>
+                    <select class="elev-height w-full p-2 border border-gray-200 rounded-lg text-sm">
+                        <option value="1.0">1-Story (1.0×)</option>
+                        <option value="1.3">2-Story (1.3×)</option>
+                        <option value="1.6">3-Story (1.6×)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] text-gray-400 uppercase block mb-1">Terrain</label>
+                    <select class="elev-terrain w-full p-2 border border-gray-200 rounded-lg text-sm">
+                        <option value="1.0">Flat (1.0×)</option>
+                        <option value="1.2">Sloped (1.2×)</option>
+                        <option value="1.25">Obstructed (1.25×)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- PHOTO -->
+            <div class="border-t pt-3">
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Elevation Photo</label>
+                <input type="file" accept="image/*" capture="environment" class="elev-photo
+                       text-xs text-gray-500
+                       file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0
+                       file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700
+                       hover:file:bg-indigo-100">
+            </div>
+
+        </div>
+    </div>`;
+
+    container.insertAdjacentHTML('beforeend', html);
+};
+
+// ── CALCULATION ENGINE ────────────────────────────────────────────────────────
+let lastCalc = null;
+
+window.calculateEstimate = function() {
+    const elevations = document.querySelectorAll('[id^="elev_"]');
+    if (!elevations.length) { alert('Add at least one elevation first.'); return; }
+
+    // Business rates
+    const wageRate    = parseFloat(document.getElementById('wageRate').value)         || 21;
+    const markUp      = parseFloat(document.getElementById('markUp').value)     / 100 || 0.5;
+    const overhead    = parseFloat(document.getElementById('overhead').value)    / 100 || 0.1;
+    const netProfit   = parseFloat(document.getElementById('netProfit').value)   / 100 || 0.3;
+    const paintCost   = parseFloat(document.getElementById('paintCostPerGal').value)  || 55;
+    const sundriesRate= parseFloat(document.getElementById('sundriesRate').value)     || 5;
+    const spreadRate  = parseFloat(document.getElementById('sidingType').value)       || 400;
+
+    const clientName    = document.getElementById('clientName').value.trim();
+    const clientAddress = document.getElementById('clientAddress').value.trim();
+
+    let totalProdHrs = 0;
+    let totalSqFt    = 0;
+    const elevResults = [];
+    let scopeText = `EXTERIOR SCOPE OF WORK\n${clientName ? clientName.toUpperCase() : 'CLIENT'} — ${clientAddress}\n${'─'.repeat(40)}\n\n`;
+
+    elevations.forEach(el => {
+        const name         = el.querySelector('.elev-name').value         || 'Elevation';
+        const sqft         = parseFloat(el.querySelector('.elev-sqft').value)     || 0;
+        const trim         = parseFloat(el.querySelector('.elev-trim').value)     || 0;
+        const windows      = parseFloat(el.querySelector('.elev-windows').value)  || 0;
+        const doors        = parseFloat(el.querySelector('.elev-doors').value)    || 0;
+        const shutters     = parseFloat(el.querySelector('.elev-shutters').value) || 0;
+        const shutterMethod= el.querySelector('.elev-shutter-method').value;
+        const heightMult   = parseFloat(el.querySelector('.elev-height').value)   || 1;
+        const terrainMult  = parseFloat(el.querySelector('.elev-terrain').value)  || 1;
+
+        // Hours before difficulty multipliers
+        const sidingHrs  = sqft    * EXT.sidingHrsPerSqFt;
+        const trimHrs    = trim    * EXT.trimHrsPerLnFt;
+        const windowHrs  = windows * EXT.windowHrsEach;
+        const doorHrs    = doors   * EXT.doorHrsEach;
+        const shutterHrs = shutters * (shutterMethod === 'remove' ? EXT.shutterRemove : EXT.shutterInPlace);
+
+        const baseHrs     = sidingHrs + trimHrs + windowHrs + doorHrs + shutterHrs;
+        const adjustedHrs = baseHrs * heightMult * terrainMult;
+
+        totalProdHrs += adjustedHrs;
+        totalSqFt    += sqft + (shutters * 15); // 15 sqft per shutter for paint calc
+
+        const breakdown = [];
+        if (sqft    > 0) breakdown.push(`${sqft} sqft siding`);
+        if (trim    > 0) breakdown.push(`${trim} lnft trim`);
+        if (windows > 0) breakdown.push(`${windows} window(s)`);
+        if (doors   > 0) breakdown.push(`${doors} door(s)`);
+        if (shutters> 0) breakdown.push(`${shutters} shutter(s)`);
+        elevResults.push({
+            name, adjustedHrs: adjustedHrs.toFixed(1), breakdown,
+            heightMult, terrainMult
+        });
+
+        // Scope text
+        if (adjustedHrs > 0) {
+            scopeText += `[ ${name.toUpperCase()} ]\n`;
+            if (sqft    > 0) scopeText += `• Prep & apply 2 coats to ${sqft} sqft of siding.\n`;
+            if (trim    > 0) scopeText += `• Paint ${trim} lin ft of fascia/soffit trim.\n`;
+            if (windows > 0) scopeText += `• Prep & paint ${windows} window(s).\n`;
+            if (doors   > 0) scopeText += `• Prep & paint ${doors} door(s).\n`;
+            if (shutters> 0) {
+                scopeText += shutterMethod === 'remove'
+                    ? `• Remove, prep, paint & reinstall ${shutters} shutter(s).\n`
+                    : `• Mask & paint ${shutters} shutter(s) in place.\n`;
+            }
+            scopeText += '\n';
+        }
+    });
+
+    // Setup/cleanup hours
+    const cleanupHrs  = totalProdHrs / EXT.setupCleanupRatio;
+    const totalHrs    = totalProdHrs + cleanupHrs;
+
+    // Gallons — 2 coats + waste factor
+    const gallonsRaw  = ((totalSqFt * 2) / spreadRate) * EXT.wasteFactor;
+    const totalGallons= Math.max(1, Math.ceil(gallonsRaw));
+
+    // Costs
+    const laborCost    = totalHrs * wageRate;
+    const materialCost = totalGallons * paintCost;
+    const sundriesCost = totalHrs * sundriesRate;
+    const baseCost     = laborCost + materialCost + sundriesCost;
+
+    // Same pricing formula as interior app
+    const withMarkup   = baseCost * (1 + markUp);
+    const withOverhead = withMarkup / (1 - overhead);
+    const finalBid     = Math.ceil(withOverhead / (1 - netProfit) / 10) * 10;
+
+    scopeText += `${'─'.repeat(40)}\nTOTAL INVESTMENT: $${finalBid.toLocaleString()}\n`;
+
+    lastCalc = {
+        clientName, clientAddress,
+        totalHours:    parseFloat(totalHrs.toFixed(1)),
+        totalGallons,
+        laborCost:     parseFloat(laborCost.toFixed(2)),
+        materialCost:  parseFloat(materialCost.toFixed(2)),
+        sundriesCost:  parseFloat(sundriesCost.toFixed(2)),
+        finalBid,
+        elevResults,
+    };
+
+    // Render summary
+    document.getElementById('summaryClient').textContent =
+        clientName ? `${clientName} — ${clientAddress}` : clientAddress;
+    document.getElementById('outHours').textContent    = `${totalHrs.toFixed(1)} hrs`;
+    document.getElementById('outGallons').textContent  = `${totalGallons} gals`;
+    document.getElementById('outLabor').textContent    = `$${laborCost.toFixed(2)}`;
+    document.getElementById('outMaterial').textContent = `$${materialCost.toFixed(2)}`;
+    document.getElementById('outSundries').textContent = `$${sundriesCost.toFixed(2)}`;
+    document.getElementById('outTotal').textContent    = `$${finalBid.toLocaleString()}`;
+
+    const list = document.getElementById('elevBreakdownList');
+    list.innerHTML = '';
+    elevResults.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'bg-gray-50 rounded-lg p-2';
+        div.innerHTML = `<p class="font-semibold text-gray-700 text-xs">${r.name} — ${r.adjustedHrs} hrs
+            <span class="text-gray-400 font-normal">(${r.heightMult}× height · ${r.terrainMult}× terrain)</span></p>
+            <p class="text-gray-400 mt-0.5">${r.breakdown.join(' · ')}</p>`;
+        list.appendChild(div);
+    });
+
+    document.getElementById('summarySection').classList.remove('hidden');
+    document.getElementById('saveBtn').classList.remove('hidden');
+    document.getElementById('summarySection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+
+
+// ── STATUS BANNER ─────────────────────────────────────────────────────────────
+function showStatus(msg, type = 'info') {
+    const b = document.getElementById('statusBanner');
+    const styles = {
+        info:    'bg-indigo-50 text-indigo-700 border border-indigo-200',
+        success: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+        error:   'bg-red-50 text-red-700 border border-red-200',
+        loading: 'bg-yellow-50 text-yellow-700 border border-yellow-200 animate-pulse',
+    };
+    b.className = `rounded-xl p-4 text-sm font-medium text-center ${styles[type]}`;
+    b.textContent = msg;
+    b.classList.remove('hidden');
+    if (type === 'success' || type === 'error') setTimeout(() => b.classList.add('hidden'), 7000);
+}
+
+// ── SUPABASE HELPERS ──────────────────────────────────────────────────────────
+async function storageUpload(bucket, path, file) {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`, {
+        method: 'POST',
+        headers: {
+            'apikey': SUPABASE_ANON,
+            'Authorization': `Bearer ${SUPABASE_ANON}`,
+            'Content-Type': file.type,
+            'x-upsert': 'true',
+        },
+        body: file,
+    });
+    if (!res.ok) throw new Error('Photo upload failed. Check your Supabase storage settings.');
+    return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+}
+
+async function dbInsert(table, payload) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+        method: 'POST',
+        headers: {
+            'apikey': SUPABASE_ANON,
+            'Authorization': `Bearer ${SUPABASE_ANON}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation',
+        },
+        body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Database save failed. Check your Supabase table settings.');
+    return (await res.json())[0];
+}
+
+// ── GOOGLE SHEETS ─────────────────────────────────────────────────────────────
+async function logToSheets(payload) {
+    try {
+        await fetch(SHEETS_WEBHOOK, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+    } catch (e) {
+        console.warn('Sheets log failed (non-fatal):', e.message);
+    }
+}
+
+// ── SAVE ──────────────────────────────────────────────────────────────────────
+window.saveEstimate = async function() {
+    if (!lastCalc) { alert('Please calculate the estimate first.'); return; }
+    if (!lastCalc.clientName || !lastCalc.clientAddress) {
+        alert('Please fill in Client Name and Address before saving.');
+        return;
+    }
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+        // Upload elevation photos
+        const safeName  = lastCalc.clientName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+        const jobFolder = `ext-${safeName}-${Date.now()}`;
+        const photoUrls = [];
+        const elevations = document.querySelectorAll('[id^="elev_"]');
+        let ei = 0;
+        for (const el of elevations) {
+            ei++;
+            const fi = el.querySelector('.elev-photo');
+            if (fi?.files?.[0]) {
+                showStatus(`Uploading photo ${ei}…`, 'loading');
+                const ext = fi.files[0].name.split('.').pop();
+                const url = await storageUpload('site-photos', `${jobFolder}/elev-${ei}.${ext}`, fi.files[0]);
+                photoUrls.push(url);
+            }
+        }
+
+        // Save to Supabase
+        showStatus('Saving to database…', 'loading');
+        const row = await dbInsert('estimates', {
+            client_name:    lastCalc.clientName,
+            client_address: lastCalc.clientAddress,
+            total_bid:      lastCalc.finalBid,
+            labor_cost:     lastCalc.laborCost,
+            material_cost:  lastCalc.materialCost,
+            hours_needed:   lastCalc.totalHours,
+            gallons_needed: lastCalc.totalGallons,
+            photo_urls:     photoUrls,
+            job_type:       'exterior',
+        });
+
+        // Log to Google Sheets
+        showStatus('Logging to Google Sheets…', 'loading');
+        await logToSheets({
+            job_type:       'exterior',
+            client_name:    lastCalc.clientName,
+            client_address: lastCalc.clientAddress,
+            hours_needed:   lastCalc.totalHours,
+            gallons_needed: lastCalc.totalGallons,
+            labor_cost:     lastCalc.laborCost,
+            material_cost:  lastCalc.materialCost,
+            sundries_cost:  lastCalc.sundriesCost,
+            total_bid:      lastCalc.finalBid,
+            photo_urls:     photoUrls,
+        });
+
+        showStatus(`✓ Saved! Record ID: ${row?.id || 'ok'}`, 'success');
+
+    } catch (err) {
+        console.error(err);
+        showStatus(`Error: ${err.message}`, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '☁ Save & Log to Google Sheets';
+    }
+};
+
+// Boot — start with Front elevation pre-loaded
+window.onload = window.addElevation;
+
+</script>
+</body>
+</html>
