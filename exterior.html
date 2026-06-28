@@ -419,17 +419,42 @@ async function dbInsert(table, payload) {
 }
 
 // ── GOOGLE SHEETS ─────────────────────────────────────────────────────────────
-async function logToSheets(payload) {
-    try {
-        await fetch(SHEETS_WEBHOOK, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        });
-    } catch (e) {
-        console.warn('Sheets log failed (non-fatal):', e.message);
-    }
+function logToSheets(payload) {
+    return new Promise((resolve) => {
+        try {
+            const iframe = document.createElement('iframe');
+            iframe.name = 'sheets_target_' + Date.now();
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = SHEETS_WEBHOOK;
+            form.target = iframe.name;
+            form.style.display = 'none';
+
+            Object.entries(payload).forEach(([key, value]) => {
+                const input = document.createElement('input');
+                input.type  = 'hidden';
+                input.name  = key;
+                input.value = Array.isArray(value) ? value.join(', ') : String(value);
+                form.appendChild(input);
+            });
+
+            document.body.appendChild(form);
+            form.submit();
+
+            setTimeout(() => {
+                document.body.removeChild(form);
+                document.body.removeChild(iframe);
+                resolve();
+            }, 2000);
+
+        } catch (e) {
+            console.warn('Sheets log failed (non-fatal):', e.message);
+            resolve();
+        }
+    });
 }
 
 // ── SAVE ──────────────────────────────────────────────────────────────────────
