@@ -653,12 +653,13 @@ window.saveEstimate = async function() {
         // Supabase DB
         showStatus('Saving estimate…', 'loading');
         const row = await dbInsert('estimates', {
+            job_type:       'interior',
             client_name:    lastCalc.clientName,
             client_address: lastCalc.clientAddress,
             total_bid:      lastCalc.finalBid,
             labor_cost:     lastCalc.laborCost,
             material_cost:  lastCalc.materialCost,
-            total_sqft:     0,
+            sundries_cost:  lastCalc.sundriesCost,
             hours_needed:   lastCalc.totalHours,
             gallons_needed: lastCalc.totalGallons,
             photo_urls:     photoUrls,
