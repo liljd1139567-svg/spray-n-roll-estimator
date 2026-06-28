@@ -414,8 +414,9 @@ async function dbInsert(table, payload) {
         },
         body: JSON.stringify(payload),
     });
-    if (!res.ok) throw new Error('Database save failed. Check your Supabase table settings.');
-    return (await res.json())[0];
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.message || json.error || 'DB insert failed');
+    return json[0];
 }
 
 // ── GOOGLE SHEETS ─────────────────────────────────────────────────────────────
