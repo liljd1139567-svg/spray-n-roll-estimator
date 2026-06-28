@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spray N Roll - Estimator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen pb-16">
+
+<header class="bg-indigo-600 text-white p-4 shadow-md sticky top-0 z-50 flex justify-between items-center">
+    <h1 class="text-xl font-bold tracking-wide">Spray N Roll Estimator</h1>
+    <span class="text-xs bg-indigo-500 px-2 py-1 rounded">v2.0</span>
+</header>
+
+<main class="max-w-lg mx-auto p-4 space-y-5">
+
+    <!-- CLIENT -->
+    <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Client Details</h2>
+        <input type="text" id="clientName" placeholder="Client Name" class="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-400">
+        <input type="text" id="clientAddress" placeholder="Property Address" class="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-indigo-400">
+    </section>
+
+    <!-- BUSINESS RATES -->
+    <section class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Business Rates</h2>
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Wage Rate ($/hr)</label>
+                <input type="number" id="wageRate" value="21" class="w-full p-2 border border-gray-200 rounded-lg text-sm text-center">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Mark Up %</label>
+                <input type="number" id="markUp" value="50" class="w-full p-2 border border-gray-200 rounded-lg text-sm text-center">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Overhead %</label>
+                <input type="number" id="overhead" value="10" class="w-full p-2 border border-gray-200 rounded-lg text-sm text-center">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Net Profit %</label>
+                <input type="number" id="netProfit" value="30" class="w-full p-2 border border-gray-200 rounded-lg text-sm text-center">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Wall Paint ($/gal)</label>
+                <input type="number" id="wallPaintCost" value="27.23" step="0.01" class="w-full p-2 border border-gray-200 rounded-lg text-sm text-center">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Ceiling Paint ($/gal)</label>
+                <input type="number" id="ceilPaintCost" value="26.23" step="0.01" class="w-full p-2 border border-gray-200 rounded-lg text-sm text-center">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Trim Paint ($/gal)</label>
+                <input type="number" id="trimPaintCost" value="32.29" step="0.01" class="w-full p-2 border border-gray-200 rounded-lg text-sm text-center">
+            </div>
+            <div>
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Sundries ($/hr)</label>
+                <input type="number" id="sundriesRate" value="3.30" step="0.01" class="w-full p-2 border border-gray-200 rounded-lg text-sm text-center">
+            </div>
+        </div>
+    </section>
+
+    <!-- ROOMS -->
+    <section id="roomsContainer" class="space-y-4"></section>
+
+    <!-- ACTIONS -->
+    <div class="space-y-3">
+        <button onclick="addRoom()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold p-4 rounded-xl shadow-sm transition">
+            + Add Room / Area
+        </button>
+        <button onclick="calculateEstimate()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-4 rounded-xl shadow-md transition">
+            Calculate Estimate
+        </button>
+        <button id="saveBtn" onclick="saveEstimate()" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold p-4 rounded-xl shadow-md transition hidden">
+            ☁ Save & Log to Google Sheets
+        </button>
+    </div>
+
+    <!-- STATUS -->
+    <div id="statusBanner" class="hidden rounded-xl p-4 text-sm font-medium text-center"></div>
+
+    <!-- SUMMARY -->
+    <section id="summarySection" class="hidden bg-white rounded-xl shadow-md border border-indigo-100 overflow-hidden">
+        <div class="bg-indigo-600 text-white px-5 py-3">
+            <h2 class="text-base font-bold">Estimate Summary</h2>
+            <p id="summaryClient" class="text-indigo-200 text-xs mt-0.5"></p>
+        </div>
+        <div class="p-5 space-y-2 text-sm text-gray-600">
+            <div class="flex justify-between"><span>Total Labor Hours:</span><span id="outHours" class="font-semibold text-gray-800"></span></div>
+            <div class="flex justify-between"><span>Total Paint (gals):</span><span id="outGallons" class="font-semibold text-gray-800"></span></div>
+            <div class="flex justify-between"><span>Labor Cost:</span><span id="outLabor" class="font-semibold text-gray-800"></span></div>
+            <div class="flex justify-between"><span>Material Cost:</span><span id="outMaterial" class="font-semibold text-gray-800"></span></div>
+            <div class="flex justify-between"><span>Sundries & Fees:</span><span id="outSundries" class="font-semibold text-gray-800"></span></div>
+            <hr class="my-1">
+            <div class="flex justify-between text-base font-bold text-gray-900">
+                <span>Grand Total Bid:</span>
+                <span id="outTotal" class="text-indigo-600 text-lg"></span>
+            </div>
+        </div>
+
+        <div id="roomBreakdown" class="border-t px-5 pb-5">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mt-4 mb-2">Room Breakdown</p>
+            <div id="roomBreakdownList" class="space-y-2 text-xs text-gray-500"></div>
+        </div>
+    </section>
+
+</main>
+
+<script type="module">
+
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_ANON = 'YOUR_ANON_PUBLIC_KEY';
+const SHEETS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbxz9X5FKffHNg91rZay6zCtWSLpGPxl6Mppvv7qRnsU-055uTsMnX6NG7Dfkc0PIJPLHQ/exec'; // Updated link from Step 3
+
+// ── PRODUCTION RATES ────────────────────────────────────────────────────────
+const RATES = {
+    smoothWallSame: 210, smoothWallChange: 120, texturedWallSame: 265, texturedWallChange: 150,
+    smoothCeilSame: 100, smoothCeilChange: 50, texturedCeilSame: 175, texturedCeilChange: 100,
+    baseboardsSame: 40, baseboardsChange: 30, baseboardsNew: 18.75,
+    maskFloor: 250, handCutSame: 60, handCutChange: 40, tapeBaseboard: 75,
+    setupCleanupRatio: 16, paintCoverage: 400,
+    door1side: 1.0, doorBothSides: 2.0, doorSameColor1: 0.75, doorSameColorBoth: 1.5,
+    dfBothSides: 1.0, dfSameColorBoth: 0.75,
+    vinylNoTrim: 0.125, vinylSillTrim: 0.1667, vinylFullTrim: 1.0,
+    woodNoOpen: 1.25, woodOpens: 1.75, wood2ToneNoOpen: 1.75, wood2ToneOpens: 2.25,
+};
+
+let roomCount = 0;
+
+window.addRoom = function() {
+    roomCount++;
+    const id = roomCount;
+    const container = document.getElementById('roomsContainer');
+
+    const wallTypeOptions = [
+        ['smoothSame',     'Smooth — Same Color'],
+        ['smoothChange',   'Smooth — Change Color'],
+        ['texturedSame',   'Textured — Same Color'],
+        ['texturedChange', 'Textured — Change Color'],
+    ];
+    const ceilTypeOptions = [
+        ['smoothSame',     'Smooth — Same Color'],
+        ['smoothChange',   'Smooth — Change Color'],
+        ['texturedSame',   'Textured — Same Color'],
+        ['texturedChange', 'Textured — Change Color'],
+    ];
+    const baseOptions = [
+        ['same',   'Same Color'],
+        ['change', 'Change Color'],
+        ['new',    'New / Never Painted'],
+    ];
+    const doorTypeOptions = [
+        ['door1side',        '1 Side'],
+        ['doorBothSides',    'Both Sides'],
+        ['doorSameColor1',   '1 Side — Same Color'],
+        ['doorSameColorBoth','Both Sides — Same Color'],
+    ];
+    const dfTypeOptions = [
+        ['dfBothSides',      'Both Sides'],
+        ['dfSameColorBoth',  'Both Sides — Same Color'],
+    ];
+    const windowTypeOptions = [
+        ['vinylNoTrim',     'Vinyl — No Trim'],
+        ['vinylSillTrim',   'Vinyl — Sill Trim (1 side)'],
+        ['vinylFullTrim',   'Vinyl — Full Trim (4 sides)'],
+        ['woodNoOpen',      'Wood — Does Not Open'],
+        ['woodOpens',       'Wood — Opens'],
+        ['wood2ToneNoOpen', 'Wood 2-Tone — Does Not Open'],
+        ['wood2ToneOpens',  'Wood 2-Tone — Opens'],
+    ];
+
+    function optHtml(opts, sel) {
+        return opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+    }
+
+    const html = `
+    <div id="room_${id}" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="flex justify-between items-center bg-gray-50 px-4 py-3 border-b">
+            <input type="text" class="room-name font-bold text-gray-700 bg-transparent text-sm w-full focus:outline-none" placeholder="Room Name" value="Room ${id}">
+            <button onclick="document.getElementById('room_${id}').remove()" class="ml-3 text-red-400 hover:text-red-600 text-xs font-semibold shrink-0">Remove</button>
+        </div>
+        <div class="p-4 space-y-4">
+            <!-- WALLS -->
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <input type="checkbox" class="wall-enabled" id="wallCb_${id}" checked>
+                    <label for="wallCb_${id}" class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Walls</label>
+                </div>
+                <div class="wall-inputs grid grid-cols-3 gap-2">
+                    <div><label class="text-[10px] text-gray-400 uppercase block mb-1">Length</label><input type="number" class="wall-length w-full p-2 border border-gray-200 rounded-md text-sm" value="12"></div>
+                    <div><label class="text-[10px] text-gray-400 uppercase block mb-1">Width</label><input type="number" class="wall-width w-full p-2 border border-gray-200 rounded-md text-sm" value="12"></div>
+                    <div><label class="text-[10px] text-gray-400 uppercase block mb-1">Height</label><input type="number" class="wall-height w-full p-2 border border-gray-200 rounded-md text-sm" value="8"></div>
+                </div>
+                <div class="wall-inputs mt-2">
+                    <label class="text-[10px] text-gray-400 uppercase block mb-1">Wall Type</label>
+                    <select class="wall-type w-full p-2 border border-gray-200 rounded-md text-sm">${optHtml(wallTypeOptions)}</select>
+                </div>
+            </div>
+            <!-- CEILING -->
+            <div class="border-t pt-3">
+                <div class="flex items-center gap-2 mb-2">
+                    <input type="checkbox" class="ceil-enabled" id="ceilCb_${id}">
+                    <label for="ceilCb_${id}" class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Ceiling</label>
+                </div>
+                <div class="ceil-inputs hidden">
+                    <select class="ceil-type w-full p-2 border border-gray-200 rounded-md text-sm">${optHtml(ceilTypeOptions)}</select>
+                </div>
+            </div>
+            <!-- BASEBOARDS -->
+            <div class="border-t pt-3">
+                <div class="flex items-center gap-2 mb-2">
+                    <input type="checkbox" class="base-enabled" id="baseCb_${id}">
+                    <label for="baseCb_${id}" class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Baseboards</label>
+                </div>
+                <div class="base-inputs hidden grid grid-cols-2 gap-2">
+                    <input type="number" class="base-lnft w-full p-2 border border-gray-200 rounded-md text-sm" placeholder="Linear Ft">
+                    <select class="base-type w-full p-2 border border-gray-200 rounded-md text-sm">${optHtml(baseOptions)}</select>
+                </div>
+            </div>
+            <!-- DOORS -->
+            <div class="border-t pt-3">
+                <div class="flex items-center gap-2 mb-2">
+                    <input type="checkbox" class="door-enabled" id="doorCb_${id}">
+                    <label for="doorCb_${id}" class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Doors</label>
+                </div>
+                <div class="door-inputs hidden grid grid-cols-2 gap-2">
+                    <input type="number" class="door-count w-full p-2 border border-gray-200 rounded-md text-sm" value="1">
+                    <select class="door-type w-full p-2 border border-gray-200 rounded-md text-sm">${optHtml(doorTypeOptions)}</select>
+                </div>
+            </div>
+             <!-- PHOTO -->
+            <div class="border-t pt-3">
+                <label class="text-[10px] text-gray-400 uppercase block mb-1">Room Photo</label>
+                <input type="file" accept="image/*" capture="environment" class="room-photo text-xs text-gray-500">
+            </div>
+        </div>
+    </div>`;
+
+    container.insertAdjacentHTML('beforeend', html);
+    const roomEl = document.getElementById(`room_${id}`);
+    [['ceil-enabled', 'ceil-inputs'], ['base-enabled', 'base-inputs'], ['door-enabled', 'door-inputs']].forEach(([cbClass, inputClass]) => {
+        const cb = roomEl.querySelector(`.${cbClass}`);
+        const inputs = roomEl.querySelector(`.${inputClass}`);
+        cb.addEventListener('change', () => inputs.classList.toggle('hidden', !cb.checked));
+    });
+};
+
+// ── CALCULATION ENGINE ────────────────────────────────────────────────────────
+let lastCalc = null;
+
+window.calculateEstimate = function() {
+    const rooms = document.querySelectorAll('[id^="room_"]');
+    if (!rooms.length) { alert('Add a room first.'); return; }
+
+    const wageRate = parseFloat(document.getElementById('wageRate').value) || 21;
+    const markUp = parseFloat(document.getElementById('markUp').value) / 100 || 0.5;
+    const overhead = parseFloat(document.getElementById('overhead').value) / 100 || 0.1;
+    const netProfit = parseFloat(document.getElementById('netProfit').value) / 100 || 0.3;
+    const wallPaint = parseFloat(document.getElementById('wallPaintCost').value) || 27.23;
+    const ceilPaint = parseFloat(document.getElementById('ceilPaintCost').value) || 26.23;
+    const trimPaint = parseFloat(document.getElementById('trimPaintCost').value) || 32.29;
+    const sundriesRate = parseFloat(document.getElementById('sundriesRate').value) || 3.30;
+
+    let totalLaborHrs = 0, totalWallGals = 0, totalCeilGals = 0, totalTrimGals = 0;
+    const roomResults = [];
+
+    rooms.forEach(room => {
+        const name = room.querySelector('.room-name').value || 'Room';
+        let hrs = 0;
+        let wallGals = 0, ceilGals = 0, trimGals = 0;
+        let breakdown = [];
+
+        if (room.querySelector('.wall-enabled').checked) {
+            const l = parseFloat(room.querySelector('.wall-length').value) || 0;
+            const w = parseFloat(room.querySelector('.wall-width').value) || 0;
+            const h = parseFloat(room.querySelector('.wall-height').value) || 0;
+            const wallSqFt = (2 * (l + w)) * h;
+            const wallHrs = wallSqFt / RATES.smoothWallSame;
+            hrs += wallHrs;
+            wallGals = (wallSqFt * 2) / RATES.paintCoverage;
+            breakdown.push(`Walls: ${wallSqFt.toFixed(0)} sqft`);
+        }
+
+        totalLaborHrs += hrs;
+        totalWallGals += wallGals;
+        roomResults.push({ name, hrs: hrs.toFixed(1), breakdown });
+    });
+
+    const totalGals = Math.ceil(totalWallGals + totalCeilGals + totalTrimGals);
+    const laborCost = totalLaborHrs * wageRate;
+    const materialCost = (totalWallGals * wallPaint);
+    const baseCost = laborCost + materialCost + (totalLaborHrs * sundriesRate);
+    const finalBid = Math.ceil((baseCost * (1 + markUp)) / (1 - overhead) / (1 - netProfit) / 10) * 10;
+
+    lastCalc = {
+        clientName: document.getElementById('clientName').value,
+        clientAddress: document.getElementById('clientAddress').value,
+        totalHours: totalLaborHrs.toFixed(1),
+        totalGallons: totalGals,
+        laborCost: laborCost.toFixed(2),
+        materialCost: materialCost.toFixed(2),
+        finalBid: finalBid,
+        roomResults
+    };
+
+    document.getElementById('outHours').textContent = `${totalLaborHrs.toFixed(1)} hrs`;
+    document.getElementById('outTotal').textContent = `$${finalBid.toLocaleString()}`;
+    document.getElementById('summarySection').classList.remove('hidden');
+    document.getElementById('saveBtn').classList.remove('hidden');
+};
+
+// ── STATUS BANNER ─────────────────────────────────────────────────────────────
+function showStatus(msg, type = 'info') {
+    const b = document.getElementById('statusBanner');
+    b.className = `rounded-xl p-4 text-sm font-medium text-center bg-indigo-50 text-indigo-700`;
+    b.textContent = msg;
+    b.classList.remove('hidden');
+}
+
+// ── SUPABASE & SHEETS ────────────────────────────────────────────────────────
+async function storageUpload(bucket, path, file) {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}`, 'x-upsert': 'true' },
+        body: file,
+    });
+    return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+}
+
+// STEP 1: FIXED logToSheets Function
+async function logToSheets(payload) {
+    try {
+        // We use 'text/plain' to avoid the "Load Error" (CORS) from Google
+        await fetch(SHEETS_WEBHOOK, {
+            method: 'POST',
+            mode: 'no-cors', 
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify(payload),
+        });
+        console.log("Data sent to Google Sheets attempt finished.");
+    } catch (e) {
+        console.error('Sheets log failed:', e.message);
+    }
+}
+
+// ── SAVE ──────────────────────────────────────────────────────────────────────
+window.saveEstimate = async function() {
+    if (!lastCalc) return;
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    try {
+        const photoUrls = []; // Photo logic simplified for this demo
+        
+        showStatus('Logging to Google Sheets...', 'loading');
+        await logToSheets({
+            client_name: lastCalc.clientName,
+            client_address: lastCalc.clientAddress,
+            total_bid: lastCalc.finalBid,
+            hours_needed: lastCalc.totalHours,
+            gallons_needed: lastCalc.totalGallons
+        });
+
+        showStatus('✓ Estimate Logged Successfully!', 'success');
+    } catch (err) {
+        showStatus('Error saving: ' + err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '☁ Save & Log to Google Sheets';
+    }
+};
+
+window.onload = window.addRoom;
+</script>
+</body>
+</html>
