@@ -79,6 +79,9 @@
         <button id="saveBtn" onclick="saveEstimate()" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold p-4 rounded-xl shadow-md transition hidden">
             ☁ Save & Log to Google Sheets
         </button>
+        <button id="pdfBtn" onclick="generatePDF()" class="w-full bg-gray-700 hover:bg-gray-800 text-white font-bold p-4 rounded-xl shadow-md transition hidden">
+            📄 View / Save Estimate as PDF
+        </button>
 
     </div>
 
@@ -534,6 +537,7 @@ window.calculateEstimate = function() {
 
     document.getElementById('summarySection').classList.remove('hidden');
     document.getElementById('saveBtn').classList.remove('hidden');
+    document.getElementById('pdfBtn').classList.remove('hidden');
     document.getElementById('summarySection').scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
@@ -698,6 +702,50 @@ window.saveEstimate = async function() {
     }
 };
 
+
+
+// ── PDF ───────────────────────────────────────────────────────────────────────
+window.generatePDF = function() {
+    if (!lastCalc) { alert('Please calculate the estimate first.'); return; }
+    const today  = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+    const expiry = new Date(Date.now() + 30*24*60*60*1000).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+    const deposit = (lastCalc.finalBid * 0.5).toLocaleString('en-US', { style:'currency', currency:'USD' });
+    const balance = (lastCalc.finalBid * 0.5).toLocaleString('en-US', { style:'currency', currency:'USD' });
+    const total   = lastCalc.finalBid.toLocaleString('en-US', { style:'currency', currency:'USD' });
+    const laborTotal    = lastCalc.laborCost.toLocaleString('en-US', { style:'currency', currency:'USD' });
+    const materialTotal = lastCalc.materialCost.toLocaleString('en-US', { style:'currency', currency:'USD' });
+    const sundriesTotal = lastCalc.sundriesCost.toLocaleString('en-US', { style:'currency', currency:'USD' });
+    const rooms = document.querySelectorAll('[id^="room_"]');
+    let hasWalls=false,hasCeil=false,hasBase=false,hasDoors=false,hasWin=false;
+    rooms.forEach(r => {
+        if (r.querySelector('.wall-enabled')?.checked) hasWalls=true;
+        if (r.querySelector('.ceil-enabled')?.checked) hasCeil=true;
+        if (r.querySelector('.base-enabled')?.checked) hasBase=true;
+        if (r.querySelector('.door-enabled')?.checked||r.querySelector('.df-enabled')?.checked) hasDoors=true;
+        if (r.querySelector('.win-enabled')?.checked) hasWin=true;
+    });
+    let rows = '';
+    const addRow = (name, desc, price) => { rows += '<tr><td style="padding:10px 8px;border-bottom:1px solid #f0f0f0;vertical-align:top"><b style="font-size:13px">'+name+'</b><br><span style="font-size:11px;color:#6b7280">'+desc+'</span></td><td style="padding:10px 8px;border-bottom:1px solid #f0f0f0;text-align:right;font-size:13px">'+(price||'—')+'</td><td style="padding:10px 8px;border-bottom:1px solid #f0f0f0;text-align:right;font-size:13px">1</td><td style="padding:10px 8px;border-bottom:1px solid #f0f0f0;text-align:right;font-size:13px;font-weight:500">'+(price||'Included')+'</td></tr>'; };
+    if (hasWalls) addRow('Wall Preparation & Painting','Surface prep, masking, hand-cutting lines. 2 coats of premium interior paint to all wall surfaces.','');
+    if (hasCeil)  addRow('Ceiling Preparation & Painting','Preparation and 2 coats of premium ceiling paint to all ceiling surfaces.','');
+    if (hasBase)  addRow('Baseboard & Trim Painting','Preparation, caulking as necessary, and 2 coats of premium semi-gloss trim paint to all baseboards.','');
+    if (hasDoors) addRow('Door & Door Frame Painting','Preparation and 2 coats of premium semi-gloss paint to all doors and door frames as specified.','');
+    if (hasWin)   addRow('Window Painting','Preparation and 2 coats of premium paint to all window surfaces as specified.','');
+    addRow('Labor',''+lastCalc.totalHours+' total labor hours including daily jobsite setup and cleanup.',laborTotal);
+    addRow('Paint & Materials','Approximately '+lastCalc.totalGallons+' gallons of premium paint plus all required sundries, tape, caulk and prep materials.',materialTotal);
+    addRow('Sundries & Consumables','Brushes, rollers, tape, plastic sheeting, drop cloths, caulk and miscellaneous job supplies.',sundriesTotal);
+    const LOGO =  + logo + ;
+    const w = window.open('','_blank');
+    w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Estimate</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;font-size:13px;color:#1f2937;padding:40px}.hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #2563eb;padding-bottom:20px;margin-bottom:24px}.co{text-align:right;font-size:12px;color:#4b5563;line-height:1.7}.co h1{font-size:17px;font-weight:700;color:#111}.meta{display:flex;justify-content:space-between;margin-bottom:24px}.bt{font-size:12px;color:#4b5563;line-height:1.8}.bt strong{display:block;font-size:13px;color:#111;margin-bottom:3px}.ei{text-align:right;font-size:12px;color:#4b5563;line-height:1.8}.et{font-size:26px;font-weight:800;color:#2563eb;letter-spacing:2px;margin-bottom:6px}table{width:100%;border-collapse:collapse;margin-bottom:16px}thead tr{background:#2563eb;color:#fff}thead th{padding:9px 8px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase}thead th:not(:first-child){text-align:right}.tt{width:280px;margin-left:auto;margin-bottom:20px}.tt td{padding:5px 8px;font-size:13px}.gtr{font-size:15px;font-weight:700;color:#2563eb;border-top:2px solid #2563eb;padding-top:8px}.dep{background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:14px 18px;margin-bottom:24px;display:flex;justify-content:space-between}.dep div{font-size:13px}.dep strong{display:block;font-size:14px;color:#1d4ed8}.terms{font-size:9.5px;color:#6b7280;line-height:1.5;border-top:1px solid #e5e7eb;padding-top:16px}.terms p{margin-bottom:6px}@media print{@page{margin:15mm}body{padding:0}}</style></head><body>');
+    w.document.write('<div class="hdr"><img src="data:image/png;base64,'+LOGO+'" style="height:75px;width:auto"><div class="co"><h1>Spray N Roll Painting LLC</h1><div>(703) 517-2598</div><div>Virginia Class B License # 2705190998</div><div>Lake Ridge, VA 22192</div><div>www.spraynrollpainting.com</div></div></div>');
+    w.document.write('<div class="meta"><div class="bt"><strong>Billed To</strong>'+lastCalc.clientName+'<br>'+(lastCalc.clientPhone?lastCalc.clientPhone+'<br>':'')+(lastCalc.clientEmail?lastCalc.clientEmail+'<br>':'')+lastCalc.clientAddress+'</div><div class="ei"><div class="et">ESTIMATE</div><div><b>Issue Date:</b> '+today+'</div><div><b>Expiry Date:</b> '+expiry+'</div></div></div>');
+    w.document.write('<table><thead><tr><th style="width:55%">Item Name</th><th style="width:15%">Price</th><th style="width:10%">Qty</th><th style="width:20%">Subtotal</th></tr></thead><tbody>'+rows+'</tbody></table>');
+    w.document.write('<table class="tt"><tr><td>Subtotal</td><td style="text-align:right">'+total+'</td></tr><tr class="gtr"><td>Amount Due (USD)</td><td style="text-align:right">'+total+'</td></tr></table>');
+    w.document.write('<div class="dep"><div>50% Deposit Due to Start<strong>'+deposit+'</strong></div><div style="text-align:right">Balance Due Upon Completion<strong>'+balance+'</strong></div></div>');
+    w.document.write('<div class="terms"><p><b>TERMS &amp; CONDITIONS</b></p><p><b>0.0) DEPOSIT:</b> Spray N Roll Painting requires 50% of estimate to start the project. Final Payment is due upon final walkthrough. Credit and Debit payment include 3.5% processing fee. Cash, Check or Zelle do not assess processing fee.</p><p><b>1.0) COLOR CHANGES:</b> All paint colors must be chosen by the Customer before any work is done. Contracted services are for two coats of paint unless explicitly stated otherwise.</p><p><b>2.0) HIDDEN CONDITIONS:</b> If defects are discovered after beginning work which could not reasonably have been discovered upon first inspection, Customer will be charged on a time and materials basis plus markup.</p><p><b>3.0) DRYWALL, PUTTYING, AND CAULKING:</b> Unless explicitly detailed in scope, prep is limited to basic spackling of picture nail holes and re-caulking cracked trim seams. Extensive repairs will be presented as a Change Order.</p><p><b>4.0) FURNITURE &amp; PROTECTION:</b> Customer is responsible for removing all small items and fragile breakables. Contractor will move large furniture and cover with plastic. Contractor is not liable for damage to items not properly cleared.</p><p><b>5.0) LIMITED WARRANTY:</b> Work is warranted to be free of material defects for one (1) year after Completion. Warranty is not effective until Contractor has received payment in full.</p><p><b>6.02) Dust and HVAC:</b> Standard prep requires sanding which generates fine airborne dust. Contractor is not responsible for replacing HVAC filters or professional duct cleaning.</p><p><b>6.03) Climate Control:</b> Customer agrees to maintain indoor temperature between 60F and 80F for the duration of the project.</p><p><b>6.05) Invoice &amp; Late Fees:</b> Invoice is due within 20 days. Late fee of 5% plus 18% per annum interest on all unpaid amounts.</p><p><b>6.09) Notice of Cancellation:</b> You may cancel without penalty within three business days from the date of the agreement.</p><p><b>7.0) LEAD PAINT DISCLOSURE (PRE-1978 HOMES):</b> For homes built prior to 1978, federal law requires specific lead-safe work practices. If subject to EPA RRP rules, any heavy scraping or sanding will require a mandatory scope change and price adjustment.</p></div>');
+    w.document.write('<scr'+'ipt>window.onload=function(){window.print()}</'+'script></body></html>');
+    w.document.close();
+};
 
 
 // Boot
